@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>ENS Auth</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f8fafc;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    .card {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.1);
+      width: 350px;
+    }
+    h2 { text-align: center; color: #1e40af; }
+    input {
+      width: 100%;
+      padding: 10px;
+      margin: 8px 0;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+    button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      border: none;
+      border-radius: 6px;
+      background: #1e40af;
+      color: white;
+      cursor: pointer;
+    }
+    button:hover { background: #1d4ed8; }
+    .toggle {
+      text-align: center;
+      margin-top: 15px;
+      font-size: 14px;
+      cursor: pointer;
+      color: #2563eb;
+    }
+    .google-btn {
+      background: #db4437;
+    }
+    .google-btn:hover {
+      background: #c23321;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+    <h2 id="form-title">Вход в ENS</h2>
+    <div id="login-form">
+      <input id="email" type="email" placeholder="Email">
+      <input id="password" type="password" placeholder="Пароль">
+      <button onclick="login()">Войти</button>
+      <button class="google-btn" onclick="googleLogin()">Войти через Google</button>
+      <div class="toggle" onclick="showRegister()">Нет аккаунта? Регистрация</div>
+    </div>
+
+    <div id="register-form" style="display:none;">
+      <input id="name" placeholder="Имя">
+      <input id="reg-email" type="email" placeholder="Email">
+      <input id="reg-password" type="password" placeholder="Пароль">
+      <button onclick="register()">Зарегистрироваться</button>
+      <div class="toggle" onclick="showLogin()">Уже есть аккаунт? Войти</div>
+    </div>
+
+    <div id="result" style="margin-top:15px; text-align:center;"></div>
+  </div>
+
+  <script>
+    function showRegister() {
+      document.getElementById('login-form').style.display = 'none';
+      document.getElementById('register-form').style.display = 'block';
+      document.getElementById('form-title').textContent = 'Регистрация';
+    }
+
+    function showLogin() {
+      document.getElementById('register-form').style.display = 'none';
+      document.getElementById('login-form').style.display = 'block';
+      document.getElementById('form-title').textContent = 'Вход в ENS';
+    }
+
+    async function register() {
+      const name = document.getElementById('name').value;
+      const email = document.getElementById('reg-email').value;
+      const password = document.getElementById('reg-password').value;
+
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, password })
+      });
+
+      const text = await res.text();
+      document.getElementById('result').innerHTML = res.ok
+        ? `<span style='color:green'>✅ ${text}</span>`
+        : `<span style='color:red'>❌ ${text}</span>`;
+    }
+
+    async function login() {
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.token) {
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('role', data.role);
+        document.getElementById('result').innerHTML =
+          `<span style='color:green'>✅ Успешный вход!</span>`;
+        setTimeout(() => {
+          window.location.href = data.role === 'ADMIN'
+            ? '/admin.html'
+            : '/map.html';
+        }, 1000);
+      } else {
+        document.getElementById('result').innerHTML =
+          `<span style='color:red'>❌ Ошибка входа</span>`;
+      }
+    }
+
+    function googleLogin() {
+      window.location.href = '/oauth2/authorization/google';
+    }
+  </script>
+</body>
+</html>
