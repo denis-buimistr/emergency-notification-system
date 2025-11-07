@@ -31,3 +31,8 @@ build/
 
 ### VS Code ###
 .vscode/
+
+
+# Ignore sensitive config
+backend/ens/src/main/resources/application.properties
+.env
