@@ -1,44 +1,82 @@
+// NotificationController.java
 package com.example.ens.controller;
 
-import org.springframework.web.bind.annotation.*;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
 import com.example.ens.model.Notification;
 import com.example.ens.repository.NotificationRepository;
+import com.example.ens.service.AlertMailService;
+import com.example.ens.service.NotificationEvents;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/notifications")
 public class NotificationController {
 
-    @Autowired
-    private NotificationRepository repository;
+    private final NotificationRepository repository;
+    private final NotificationEvents events;
+    private final AlertMailService alertMailService;
+
+    public NotificationController(NotificationRepository repository,
+                                  NotificationEvents events,
+                                  AlertMailService alertMailService) {
+        this.repository = repository;
+        this.events = events;
+        this.alertMailService = alertMailService;
+    }
 
     @GetMapping
     public List<Notification> getAll() {
         return repository.findAll();
     }
 
+    @GetMapping("/active")
+    public List<Notification> getActive() {
+        return repository.findByStatus("active");
+    }
+
     @PostMapping
     public ResponseEntity<?> create(@RequestBody Notification notification) {
-        try {
-            System.out.println("📩 Получено уведомление: " + notification.getMessage());
 
-            Notification saved = repository.save(notification);
-
-            System.out.println("✅ Уведомление сохранено с ID: " + saved.getId());
-            return ResponseEntity.ok(saved);
-        } catch (Exception e) {
-            System.err.println("❌ Ошибка при создании уведомления: " + e.getMessage());
-            e.printStackTrace();
-            return ResponseEntity.status(500).body("Ошибка: " + e.getMessage());
+        if (notification.getStatus() == null || notification.getStatus().isBlank()) {
+            notification.setStatus("active");
         }
+
+        Notification saved = repository.save(notification);
+
+        // отправка email всем пользователям в фоне (многопоточность)
+        alertMailService.sendAlertToAll(
+                notification.getType(),
+                notification.getMessage(),
+                notification.getLatitude(),
+                notification.getLongitude()
+        );
+
+        // WebSocket
+        events.broadcast("CREATED", saved);
+
+        return ResponseEntity.ok(saved);
     }
 
     @PutMapping("/{id}/resolve")
-    public Notification resolve(@PathVariable Long id) {
+    public ResponseEntity<?> resolve(@PathVariable Long id) {
         Notification n = repository.findById(id).orElseThrow();
         n.setStatus("resolved");
-        return repository.save(n);
+        Notification saved = repository.save(n);
+
+        events.broadcast("RESOLVED", saved);
+
+        return ResponseEntity.ok(saved);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> delete(@PathVariable Long id) {
+        Notification n = repository.findById(id).orElseThrow();
+        repository.delete(n);
+
+        events.broadcast("DELETED", n);
+
+        return ResponseEntity.noContent().build();
     }
 }

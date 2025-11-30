@@ -3,6 +3,8 @@ package com.example.ens.model;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 @Entity
 @Table(name = "notifications")
 public class Notification {
@@ -22,6 +24,7 @@ public class Notification {
     // 🔹 Связь с пользователем (многие уведомления — один пользователь)
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = true)
+    @JsonIgnore
     private User user;
 
     // 🔹 Конструктор по умолчанию (нужен для JPA)

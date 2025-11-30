@@ -1,83 +1,518 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <title>ENS Admin Panel</title>
-    <style>
-        body { font-family: sans-serif; max-width: 700px; margin: 40px auto; }
-        input, button { display: block; margin-top: 10px; padding: 8px; width: 100%; }
-        h2 { color: #1e40af; }
-        .notif { border: 1px solid #ccc; padding: 10px; margin-top: 10px; border-radius: 5px; }
-    </style>
+  <meta charset="UTF-8" />
+  <title>ENS · Админ-панель</title>
+
+  <!-- Leaflet (карта) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <style>
+    :root {
+      --blue:#1e40af;
+      --blue2:#2563eb;
+      --bg:#f8fafc;
+      --card:#fff;
+      --muted:#64748b;
+      --border:#e2e8f0;
+      --success:#16a34a;
+      --danger:#dc2626;
+    }
+
+    * { box-sizing:border-box; }
+
+    body{
+      margin:0;
+      font-family:Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      background:var(--bg);
+      color:#0f172a;
+    }
+
+    .shell{
+      max-width:1100px;
+      margin:32px auto;
+      padding:0 16px;
+    }
+
+    header{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      margin-bottom:20px;
+    }
+
+    .brand{
+      font-weight:800;
+      color:var(--blue);
+      font-size:26px;
+      letter-spacing:.3px;
+    }
+
+    .card{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:16px;
+      box-shadow:0 6px 18px rgba(15,23,42,0.05);
+    }
+
+    .toolbar{
+      display:flex;
+      gap:12px;
+      align-items:center;
+    }
+
+    .btn{
+      appearance:none;
+      border:0;
+      border-radius:10px;
+      padding:10px 14px;
+      font-weight:600;
+      cursor:pointer;
+      font-size:14px;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:6px;
+      transition:background .15s, transform .05s, box-shadow .15s;
+    }
+
+    .btn:active{
+      transform:translateY(1px);
+      box-shadow:none;
+    }
+
+    .btn.primary{
+      background:var(--blue);
+      color:#fff;
+      box-shadow:0 8px 20px rgba(37,99,235,0.35);
+    }
+
+    .btn.primary:hover{ background:#1d4ed8; }
+
+    .btn.secondary{
+      background:#eef2ff;
+      color:var(--blue);
+    }
+
+    .btn.secondary:hover{ background:#e0e7ff; }
+
+    .btn.ghost{
+      background:transparent;
+      border:1px solid var(--border);
+      color:#0f172a;
+    }
+
+    .btn.ghost:hover{ background:#f1f5f9; }
+
+    .btn.success{
+      background:var(--success);
+      color:#fff;
+    }
+
+    .btn.success:hover{ background:#15803d; }
+
+    .btn.danger{
+      background:var(--danger);
+      color:#fff;
+    }
+
+    .btn.danger:hover{ background:#b91c1c; }
+
+    .grid{
+      display:grid;
+      gap:16px;
+    }
+    @media (min-width:980px){
+      .grid{
+        grid-template-columns:1.15fr 1fr;
+      }
+    }
+
+    .section{
+      padding:20px;
+    }
+
+    .section h2{
+      margin:0 0 14px 0;
+      color:var(--blue);
+      font-size:20px;
+    }
+
+    .field{
+      display:flex;
+      flex-direction:column;
+      margin-bottom:12px;
+    }
+
+    .label{
+      font-size:13px;
+      color:var(--muted);
+      margin-bottom:6px;
+    }
+
+    .input,
+    .select,
+    textarea{
+      padding:12px;
+      border:1px solid var(--border);
+      border-radius:10px;
+      background:#fff;
+      outline:none;
+      font-size:14px;
+      width:100%;
+    }
+
+    textarea{
+      min-height:84px;
+      resize:vertical;
+    }
+
+    .input:focus,
+    .select:focus,
+    textarea:focus{
+      border-color:var(--blue2);
+      box-shadow:0 0 0 1px rgba(37,99,235,0.35);
+    }
+
+    #map{
+      height:340px;
+      border-radius:12px;
+      border:1px solid var(--border);
+    }
+
+    .list-head,
+    .row{
+      display:grid;
+      grid-template-columns:130px 1fr 190px 120px 120px;
+      gap:12px;
+      align-items:center;
+    }
+
+    .list-head{
+      color:var(--muted);
+      font-size:13px;
+      padding:10px 14px;
+      border-bottom:1px solid var(--border);
+    }
+
+    .row{
+      padding:12px 14px;
+      border-bottom:1px solid var(--border);
+      font-size:14px;
+    }
+
+    .status{
+      font-weight:700;
+    }
+    .status.active{ color:#0ea5e9; }
+    .status.resolved{ color:var(--success); }
+
+    .muted{ color:var(--muted); }
+
+    .hint{
+      font-size:12px;
+      color:var(--muted);
+    }
+
+    .actions{
+      display:flex;
+      justify-content:flex-end;
+      gap:6px;
+    }
+
+    .list-empty{
+      padding:14px;
+      font-size:14px;
+      color:var(--muted);
+    }
+  </style>
 </head>
 <body>
+  <div class="shell">
+    <header>
+      <div class="brand">ENS · Admin</div>
+      <div class="toolbar">
+        <button class="btn ghost" onclick="logout()">Выйти</button>
+      </div>
+    </header>
 
-    <h2>Добавить уведомление</h2>
-    <input id="message" placeholder="Сообщение">
-    <input id="type" placeholder="Тип (fire, accident...)">
-    <input id="latitude" placeholder="Широта">
-    <input id="longitude" placeholder="Долгота">
-    <button onclick="createNotification()">Создать</button>
+    <div class="grid">
+      <!-- Левая панель: создание алерта -->
+      <div class="card section">
+        <h2>Создать алерт</h2>
 
-    <hr>
+        <div class="field">
+          <label class="label">Тип</label>
+          <select id="type" class="select">
+            <option value="fire">Пожар</option>
+            <option value="accident">ДТП</option>
+            <option value="flood">Наводнение</option>
+            <option value="gas">Утечка газа</option>
+            <option value="other">Другое</option>
+          </select>
+        </div>
 
-    <h2>Активные уведомления</h2>
-    <div id="notifications"></div>
+        <div class="field">
+          <label class="label">Сообщение</label>
+          <textarea id="message" class="input"
+            placeholder="Кратко опиши, что случилось"></textarea>
+        </div>
 
-    <script>
-        async function loadNotifications() {
-    const res = await fetch('http://localhost:8080/api/notifications');
-    const data = await res.json();
-    const container = document.getElementById('notifications');
-    container.innerHTML = '';
-    data.forEach(n => {
-        const el = document.createElement('div');
-        el.className = 'notif';
-        el.innerHTML = `
-            <b>${n.type.toUpperCase()}</b>: ${n.message}<br>
-            📍 ${n.latitude}, ${n.longitude}<br>
-            Статус: <b>${n.status}</b>
-            <br><button onclick="resolve(${n.id})">✅ Пометить решённым</button>
-        `;
-        container.appendChild(el);
+        <div class="field">
+          <label class="label">Адрес (можно просто область/улицу)</label>   
+          <input id="address" class="input"
+            placeholder="Например: Кишинёв, Cuza-Voda 34/2" />
+          <div class="hint">
+            Можно выбрать точку на карте или определить текущее местоположение.
+            Адрес подставится автоматически при клике по карте.
+          </div>
+        </div>
+
+        <div style="display:flex; gap:8px; margin:10px 0 14px; flex-wrap:wrap;">
+          <button class="btn secondary" onclick="geocodeAddress()">Найти по адресу</button>
+          <button class="btn ghost" onclick="useMyLocation()">Моё местоположение</button>
+          <button class="btn ghost" onclick="clearMarker()">Сбросить точку</button>
+        </div>
+
+        <div id="map" class="card" style="overflow:hidden"></div>
+        <div class="hint" style="margin-top:8px">
+          Кликни по карте, чтобы поставить метку. Координаты сохраняются автоматически.
+        </div>
+
+        <input type="hidden" id="lat" />
+        <input type="hidden" id="lng" />
+
+        <div style="display:flex; gap:10px; margin-top:16px; justify-content:flex-end;">
+          <button class="btn primary" onclick="createAlert()">Создать алерт</button>
+        </div>
+      </div>
+
+      <!-- Правая панель: список -->
+      <div class="card section">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+          <h2 style="margin-bottom:0;">Активные уведомления</h2>
+          <button class="btn ghost" onclick="loadList()">Обновить</button>
+        </div>
+
+        <div class="list-head" style="margin-top:10px;">
+          <div>Тип</div>
+          <div>Сообщение</div>
+          <div>Локация</div>
+          <div>Статус</div>
+          <div style="text-align:right;">Действия</div>
+        </div>
+        <div id="list"></div>
+        <div class="hint" style="margin-top:8px">
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API = window.location.origin;            // https://localhost:8443
+    const token = localStorage.getItem('token');
+    if (!token) window.location.href = '/auth.html';
+
+    /* ------------------ КАРТА ------------------ */
+
+    const map = L.map('map').setView([47.0105, 28.8638], 12); // Кишинёв
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap'
+    }).addTo(map);
+
+    let marker = null;
+
+    map.on('click', (e) => {
+      setPoint(e.latlng.lat, e.latlng.lng);
+      reverseGeocode(e.latlng.lat, e.latlng.lng)
+        .catch(() => {}); // если не получилось — просто молчим
     });
-}
 
-async function createNotification() {
-    const message = document.getElementById('message').value;
-    const type = document.getElementById('type').value;
-    const latitude = parseFloat(document.getElementById('latitude').value);
-    const longitude = parseFloat(document.getElementById('longitude').value);
-
-    try {
-        const res = await fetch('http://localhost:8080/api/notifications', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message, type, latitude, longitude })
-        });
-
-        if (res.ok) {
-            alert('✅ Уведомление создано!');
-            loadNotifications();
-        } else {
-            const err = await res.text();
-            console.error("Ошибка:", err);
-            alert('❌ Ошибка при создании!\n' + err);
-        }
-    } catch (e) {
-        console.error("⚠️ Не удалось отправить запрос:", e);
-        alert('⚠️ Не удалось подключиться к серверу!');
+    function setPoint(lat, lng){
+      if (marker) marker.remove();
+      marker = L.marker([lat, lng]).addTo(map);
+      document.getElementById('lat').value = lat.toFixed(6);
+      document.getElementById('lng').value = lng.toFixed(6);
     }
-}
 
-async function resolve(id) {
-    await fetch(`http://localhost:8080/api/notifications/${id}/resolve`, { method: 'PUT' });
-    loadNotifications();
-}
+    function clearMarker(){
+      if (marker) marker.remove();
+      marker = null;
+      document.getElementById('lat').value = '';
+      document.getElementById('lng').value = '';
+    }
 
-loadNotifications();
+    async function useMyLocation(){
+      if (!navigator.geolocation){
+        alert('Геолокация не поддерживается этим браузером');
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(async pos => {
+        const { latitude, longitude } = pos.coords;
+        map.setView([latitude, longitude], 15);
+        setPoint(latitude, longitude);
+        await reverseGeocode(latitude, longitude).catch(() => {});
+      }, () => alert('Не удалось получить координаты'));
+    }
 
-    </script>
+    // Прямой геокодинг (из адреса в координаты)
+    async function geocodeAddress(){
+      const q = document.getElementById('address').value.trim();
+      if (!q){
+        alert('Введите адрес');
+        return;
+      }
+      const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}`;
+      const res = await fetch(url, { headers:{'Accept-Language':'ru'} });
+      const data = await res.json();
+      if (!data.length){
+        alert('Ничего не найдено по этому адресу');
+        return;
+      }
+      const { lat, lon, display_name } = data[0];
+      map.setView([+lat, +lon], 16);
+      setPoint(+lat, +lon);
+      // обновим адрес нормальной строкой
+      document.getElementById('address').value = display_name;
+    }
 
+    // Обратный геокодинг (из координат в адрес)
+    async function reverseGeocode(lat, lng){
+      const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`;
+      const res = await fetch(url, { headers:{'Accept-Language':'ru'} });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data && data.display_name){
+        document.getElementById('address').value = data.display_name;
+      }
+    }
+
+    /* ------------------ API: создание / список / действия ------------------ */
+
+    async function createAlert(){
+      const message = document.getElementById('message').value.trim();
+      const type    = document.getElementById('type').value;
+      const lat     = parseFloat(document.getElementById('lat').value);
+      const lng     = parseFloat(document.getElementById('lng').value);
+
+      if (!message){
+        alert('Заполни сообщение');
+        return;
+      }
+      if (Number.isNaN(lat) || Number.isNaN(lng)){
+        alert('Укажи точку на карте или адрес');
+        return;
+      }
+
+      const body = { message, type, latitude: lat, longitude: lng };
+
+      const res = await fetch(`${API}/api/notifications`, {
+        method:'POST',
+        headers:{
+          'Content-Type':'application/json',
+          'Authorization':'Bearer ' + token
+        },
+        body:JSON.stringify(body)
+      });
+
+      if (!res.ok){
+        const t = await res.text();
+        alert('❌ Ошибка: ' + t);
+        return;
+      }
+
+      alert('✅ Алерт создан и разослан');
+      document.getElementById('message').value = '';
+      // оставим адрес и метку – удобно для похожих алертов
+      await loadList();
+    }
+
+    async function resolve(id){
+      const res = await fetch(`${API}/api/notifications/${id}/resolve`, {
+        method:'PUT',
+        headers:{ 'Authorization':'Bearer '+token }
+      });
+      if (res.ok) loadList();
+      else alert('Не удалось обновить статус');
+    }
+
+    // УДАЛЕНИЕ уведомления (НУЖЕН backend: DELETE /api/notifications/{id})
+    async function removeNotification(id){
+      if (!confirm('Удалить это уведомление безвозвратно?')) return;
+      const res = await fetch(`${API}/api/notifications/${id}`, {
+        method:'DELETE',
+        headers:{ 'Authorization':'Bearer '+token }
+      });
+      if (res.ok) loadList();
+      else{
+        const t = await res.text();
+        alert('Не удалось удалить: ' + t);
+      }
+    }
+
+    function isSystemTestNotification(n){
+      const type = (n.type || '').toUpperCase();
+      const msg  = (n.message || '').toLowerCase();
+      // фильтр срочно ненужных тестовых уведомлений
+      return type.includes('СИСТЕМА ENS') || msg.includes('тестов');
+    }
+
+    async function loadList(){
+      const res = await fetch(`${API}/api/notifications`, {
+        headers:{ 'Authorization':'Bearer '+token }
+      });
+      if (!res.ok){
+        document.getElementById('list').innerHTML =
+          '<div class="list-empty">Не удалось загрузить список</div>';
+        return;
+      }
+
+      const data = await res.json();
+      const box  = document.getElementById('list');
+      box.innerHTML = '';
+
+      // убираем тестовые/системные
+      const filtered = data.filter(n => !isSystemTestNotification(n));
+
+      if (!filtered.length){
+        box.innerHTML = '<div class="list-empty">Нет активных уведомлений</div>';
+        return;
+      }
+
+      filtered.forEach(n => {
+        const row = document.createElement('div');
+        row.className = 'row';
+        row.innerHTML = `
+          <div class="muted">${n.type?.toUpperCase() || '-'}</div>
+          <div>${n.message || '-'}</div>
+          <div class="muted">
+            ${isFinite(+n.latitude) && isFinite(+n.longitude)
+              ? '📍 ' + (+n.latitude).toFixed(5) + ', ' + (+n.longitude).toFixed(5)
+              : '—'}
+          </div>
+          <div class="status ${n.status}">
+            ${n.status === 'resolved' ? 'Resolved' : 'Active'}
+          </div>
+          <div class="actions">
+            ${n.status === 'resolved'
+              ? ''
+              : `<button class="btn success" onclick="resolve(${n.id})" title="Пометить решённым">✓</button>`}
+            <button class="btn danger" onclick="removeNotification(${n.id})" title="Удалить">✕</button>
+          </div>
+        `;
+        box.appendChild(row);
+      });
+    }
+
+    function logout(){
+      localStorage.clear();
+      location.href = '/auth.html';
+    }
+
+    loadList(); // первичная загрузка
+  </script>
 </body>
 </html>

@@ -2,141 +2,235 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>ENS Auth</title>
+  <title>ENS — Авторизация</title>
+
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #f8fafc;
+      background: linear-gradient(to bottom right, #1e3a8a, #2563eb);
       display: flex;
       justify-content: center;
       align-items: center;
       height: 100vh;
+      margin: 0;
     }
+
     .card {
       background: white;
       padding: 30px;
-      border-radius: 12px;
-      box-shadow: 0 0 20px rgba(0,0,0,0.1);
-      width: 350px;
+      border-radius: 16px;
+      box-shadow: 0 20px 30px rgba(0,0,0,0.2);
+      width: 370px;
+      animation: fadeIn 0.5s ease;
     }
-    h2 { text-align: center; color: #1e40af; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    h2 {
+      text-align: center;
+      color: #1e3a8a;
+      margin-bottom: 20px;
+    }
+
     input {
       width: 100%;
-      padding: 10px;
+      padding: 12px;
       margin: 8px 0;
       border: 1px solid #ccc;
-      border-radius: 6px;
+      border-radius: 8px;
+      font-size: 15px;
+      transition: 0.2s;
     }
+
+    input:focus {
+      border-color: #2563eb;
+      outline: none;
+      box-shadow: 0 0 4px rgba(37, 99, 235, 0.5);
+    }
+
     button {
       width: 100%;
-      padding: 10px;
-      margin-top: 10px;
+      padding: 12px;
+      margin-top: 12px;
       border: none;
-      border-radius: 6px;
-      background: #1e40af;
+      border-radius: 8px;
+      background: #2563eb;
       color: white;
       cursor: pointer;
+      font-size: 16px;
+      transition: 0.2s;
     }
+
     button:hover { background: #1d4ed8; }
-    .toggle {
-      text-align: center;
-      margin-top: 15px;
-      font-size: 14px;
-      cursor: pointer;
-      color: #2563eb;
-    }
+
     .google-btn {
       background: #db4437;
     }
     .google-btn:hover {
       background: #c23321;
     }
+
+    .toggle {
+      text-align: center;
+      margin-top: 14px;
+      color: #1e40af;
+      cursor: pointer;
+      font-size: 15px;
+    }
+
+    .msg {
+      margin-top: 14px;
+      text-align: center;
+      font-size: 15px;
+      min-height: 24px;
+    }
   </style>
 </head>
+
 <body>
 
   <div class="card">
-    <h2 id="form-title">Вход в ENS</h2>
-    <div id="login-form">
-      <input id="email" type="email" placeholder="Email">
-      <input id="password" type="password" placeholder="Пароль">
+    <h2 id="title">Вход в ENS</h2>
+
+    <!-- LOGIN -->
+    <div id="login">
+      <input id="login-email" type="email" placeholder="Email">
+      <input id="login-pass" type="password" placeholder="Пароль">
+
       <button onclick="login()">Войти</button>
       <button class="google-btn" onclick="googleLogin()">Войти через Google</button>
-      <div class="toggle" onclick="showRegister()">Нет аккаунта? Регистрация</div>
+
+      <div class="toggle" onclick="showRegister()">Регистрация</div>
+      <div class="toggle" onclick="showReset()">Забыли пароль?</div>
     </div>
 
-    <div id="register-form" style="display:none;">
-      <input id="name" placeholder="Имя">
+    <!-- REGISTER -->
+    <div id="register" style="display:none;">
+      <input id="reg-name" type="text" placeholder="Имя">
       <input id="reg-email" type="email" placeholder="Email">
-      <input id="reg-password" type="password" placeholder="Пароль">
-      <button onclick="register()">Зарегистрироваться</button>
-      <div class="toggle" onclick="showLogin()">Уже есть аккаунт? Войти</div>
+      <input id="reg-pass" type="password" placeholder="Пароль">
+
+      <button onclick="register()">Создать аккаунт</button>
+      <div class="toggle" onclick="showLogin()">Уже есть аккаунт?</div>
     </div>
 
-    <div id="result" style="margin-top:15px; text-align:center;"></div>
+    <!-- RESET PASSWORD -->
+    <div id="reset" style="display:none;">
+      <input id="reset-email" type="email" placeholder="Введите ваш email">
+      <button onclick="resetPassword()">Восстановить пароль</button>
+      <div class="toggle" onclick="showLogin()">Назад</div>
+    </div>
+
+    <div id="result" class="msg"></div>
   </div>
 
-  <script>
-    function showRegister() {
-      document.getElementById('login-form').style.display = 'none';
-      document.getElementById('register-form').style.display = 'block';
-      document.getElementById('form-title').textContent = 'Регистрация';
-    }
+<script>
 
-    function showLogin() {
-      document.getElementById('register-form').style.display = 'none';
-      document.getElementById('login-form').style.display = 'block';
-      document.getElementById('form-title').textContent = 'Вход в ENS';
-    }
+  function showLogin() {
+    document.getElementById("login").style.display = "block";
+    document.getElementById("register").style.display = "none";
+    document.getElementById("reset").style.display = "none";
+    document.getElementById("title").innerText = "Вход в ENS";
+    clearResult();
+  }
 
-    async function register() {
-      const name = document.getElementById('name').value;
-      const email = document.getElementById('reg-email').value;
-      const password = document.getElementById('reg-password').value;
+  function showRegister() {
+    document.getElementById("login").style.display = "none";
+    document.getElementById("register").style.display = "block";
+    document.getElementById("reset").style.display = "none";
+    document.getElementById("title").innerText = "Регистрация";
+    clearResult();
+  }
 
-      const res = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password })
-      });
+  function showReset() {
+    document.getElementById("login").style.display = "none";
+    document.getElementById("register").style.display = "none";
+    document.getElementById("reset").style.display = "block";
+    document.getElementById("title").innerText = "Восстановление пароля";
+    clearResult();
+  }
 
-      const text = await res.text();
-      document.getElementById('result').innerHTML = res.ok
-        ? `<span style='color:green'>✅ ${text}</span>`
-        : `<span style='color:red'>❌ ${text}</span>`;
-    }
+  function showMessage(text, ok = false) {
+    const el = document.getElementById("result");
+    el.style.color = ok ? "green" : "red";
+    el.innerHTML = text;
+  }
 
-    async function login() {
-      const email = document.getElementById('email').value;
-      const password = document.getElementById('password').value;
+  function clearResult() {
+    document.getElementById("result").innerHTML = "";
+  }
 
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
-      });
+// ------------------ REGISTER -------------------
+async function register() {
+  const name = document.getElementById('reg-name').value;
+  const email = document.getElementById('reg-email').value;
+  const password = document.getElementById('reg-pass').value;
 
-      const data = await res.json();
+  const res = await fetch('/api/auth/register', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      firstName: name,
+      lastName: "",
+      email: email,
+      password: password
+    })
+  });
 
-      if (res.ok && data.token) {
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('role', data.role);
-        document.getElementById('result').innerHTML =
-          `<span style='color:green'>✅ Успешный вход!</span>`;
-        setTimeout(() => {
-          window.location.href = data.role === 'ADMIN'
-            ? '/admin.html'
-            : '/map.html';
-        }, 1000);
-      } else {
-        document.getElementById('result').innerHTML =
-          `<span style='color:red'>❌ Ошибка входа</span>`;
-      }
-    }
+  const text = await res.text();
+  showMessage(text, res.ok);
+}
 
-    function googleLogin() {
-      window.location.href = '/oauth2/authorization/google';
-    }
-  </script>
+
+
+// ------------------ LOGIN -------------------
+  async function login() {
+  const email = document.getElementById("login-email").value.trim();
+  const password = document.getElementById("login-pass").value.trim();
+
+  const res = await fetch("/api/auth/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password })
+  });
+
+  if (!res.ok) return showMessage("Неверный логин или пароль");
+
+  const data = await res.json();
+  localStorage.setItem("token", data.token);
+  localStorage.setItem("role", data.role);
+
+  showMessage("Успешный вход!", true);
+
+  setTimeout(() => {
+    window.location.href = data.role === "ADMIN" ? "/admin.html" : "/map.html";
+  }, 800);
+}
+
+  // ------------------ GOOGLE LOGIN -------------------
+  function googleLogin() {
+    window.location.href = "/oauth2/authorization/google";
+  }
+
+  // ------------------ RESET PASSWORD -------------------
+  async function resetPassword() {
+    const email = document.getElementById("reset-email").value.trim();
+    if (!email.includes("@")) return showMessage("Некорректный email");
+
+    const res = await fetch("/api/auth/reset-password", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email })
+    });
+
+    const text = await res.text();
+    showMessage(text, res.ok);
+  }
+
+</script>
+
 </body>
 </html>

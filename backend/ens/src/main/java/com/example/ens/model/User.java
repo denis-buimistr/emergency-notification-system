@@ -2,7 +2,12 @@ package com.example.ens.model;
 
 import jakarta.persistence.*;
 import java.util.List;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
+@JsonIgnoreProperties(ignoreUnknown = true)
 @Entity
 @Table(name = "users")
 public class User {
@@ -11,30 +16,48 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String name;
+    // Основные данные
+    private String firstName;
+    private String lastName;
+    
+    @Column(unique = true)
     private String email;
-    private String phone;
-    private String role;
-    private String password; // 
-    private String provider; // (для Google / Local)
 
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
+    private String phone;
+    private String role;      // USER / ADMIN
+    private String password;  // захешированный
+    private String provider;  // LOCAL / GOOGLE
+
+    // Профиль
+    private String birthDate;       // yyyy-MM-dd (можно строкой)
+    private String bloodType;       // A+, O-, ...
+    private Double weight;          // кг
+    private Double height;          // см
+    private String allergies;       // текст
+    private String diseases;        // текст
+    private String emergencyContact;
+    private String avatarUrl;       // на будущее
+
+    private Boolean notifNewAlerts = true;
+    private Boolean notifDangerZone = true;
+    private Boolean shareLocation = true;
+
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
     private List<Notification> notifications;
 
     public User() {}
 
-    public User(String name, String email, String phone, String role) {
-        this.name = name;
-        this.email = email;
-        this.phone = phone;
-        this.role = role;
-    }
+    // getters / setters
 
-    // 🔹 Getters / Setters
     public Long getId() { return id; }
 
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
+    public String getFirstName() { return firstName; }
+    public void setFirstName(String firstName) { this.firstName = firstName; }
+
+    public String getLastName() { return lastName; }
+    public void setLastName(String lastName) { this.lastName = lastName; }
 
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }
@@ -50,4 +73,38 @@ public class User {
 
     public String getProvider() { return provider; }
     public void setProvider(String provider) { this.provider = provider; }
+
+    public String getBirthDate() { return birthDate; }
+    public void setBirthDate(String birthDate) { this.birthDate = birthDate; }
+
+    public String getBloodType() { return bloodType; }
+    public void setBloodType(String bloodType) { this.bloodType = bloodType; }
+
+    public Double getWeight() { return weight; }
+    public void setWeight(Double weight) { this.weight = weight; }
+
+    public Double getHeight() { return height; }
+    public void setHeight(Double height) { this.height = height; }
+
+    public String getAllergies() { return allergies; }
+    public void setAllergies(String allergies) { this.allergies = allergies; }
+
+    public String getDiseases() { return diseases; }
+    public void setDiseases(String diseases) { this.diseases = diseases; }
+
+    public String getEmergencyContact() { return emergencyContact; }
+    public void setEmergencyContact(String emergencyContact) { this.emergencyContact = emergencyContact; }
+
+    public String getAvatarUrl() { return avatarUrl; }
+    public void setAvatarUrl(String avatarUrl) { this.avatarUrl = avatarUrl; }
+
+    public Boolean getNotifNewAlerts() { return notifNewAlerts; }
+    public void setNotifNewAlerts(Boolean notifNewAlerts) { this.notifNewAlerts = notifNewAlerts; }
+
+    public Boolean getNotifDangerZone() { return notifDangerZone; }
+    public void setNotifDangerZone(Boolean notifDangerZone) { this.notifDangerZone = notifDangerZone; }
+
+    public Boolean getShareLocation() { return shareLocation; }
+    public void setShareLocation(Boolean shareLocation) { this.shareLocation = shareLocation; }
+
 }

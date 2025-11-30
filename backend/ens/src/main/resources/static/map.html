@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>ENS · Live карта</title>
+
+  <!-- Leaflet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <style>
+.alert-marker {
+    font-size: 22px;
+    line-height: 32px;
+    text-align: center;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    background: white;
+    box-shadow: 0 0 6px rgba(0,0,0,0.4);
+    border: 2px solid #2563eb;
+  }
+
+  .alert-marker.fire   { border-color:#ef4444; }
+  .alert-marker.flood  { border-color:#0ea5e9; }
+  .alert-marker.gas    { border-color:#22c55e; }
+  .alert-marker.other  { border-color:#6b7280; }
+
+    :root{
+      --blue:#1e40af;
+      --blue2:#2563eb;
+      --bg:#f8fafc;
+      --card:#fff;
+      --muted:#64748b;
+      --border:#e2e8f0;
+      --danger:#dc2626;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:Inter,system-ui,sans-serif;
+      background:var(--bg);
+      height:100vh;
+      display:flex;
+      flex-direction:column;
+    }
+
+    header{
+      height:60px;
+      background:white;
+      border-bottom:1px solid var(--border);
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      padding:0 24px;
+    }
+
+    .brand{
+      font-size:24px;
+      font-weight:800;
+      color:var(--blue);
+    }
+
+    nav a{
+      text-decoration:none;
+      color:#0f172a;
+      margin-left:20px;
+      font-weight:600;
+      transition:.1s;
+    }
+    nav a:hover{color:var(--blue2)}
+
+    .btn-logout{
+      background:var(--danger);
+      color:white;
+      border:0;
+      padding:8px 14px;
+      border-radius:8px;
+      cursor:pointer;
+      font-weight:600;
+    }
+    .btn-logout:hover{background:#b91c1c}
+
+    /* --------- Контейнер --------- */
+    .layout{
+      display:flex;
+      height:calc(100vh - 60px);
+    }
+
+    .sidebar{
+      width:360px;
+      padding:20px;
+      background:white;
+      border-right:1px solid var(--border);
+      overflow-y:auto;
+    }
+
+    h2{
+      margin-top:0;
+      color:var(--blue);
+    }
+
+    select{
+      width:100%;
+      padding:12px;
+      border:1px solid var(--border);
+      border-radius:10px;
+      background:white;
+      margin-bottom:14px;
+    }
+
+    .filter-buttons{
+      display:flex;
+      gap:8px;
+      margin-bottom:16px;
+      flex-wrap:wrap;
+    }
+
+    .f-btn{
+      border:1px solid var(--border);
+      background:white;
+      padding:8px 14px;
+      border-radius:20px;
+      cursor:pointer;
+      font-size:13px;
+    }
+    .f-btn.active{
+      background:var(--blue2);
+      color:white;
+      border-color:var(--blue2);
+    }
+
+    .card{
+      background:var(--card);
+      border:1px solid var(--border);
+      padding:14px;
+      border-radius:14px;
+      margin-bottom:12px;
+      box-shadow:0 4px 12px rgba(0,0,0,0.05);
+    }
+
+    .type-label{
+      background:#eef2ff;
+      color:var(--blue);
+      font-size:12px;
+      padding:4px 10px;
+      border-radius:10px;
+      display:inline-block;
+      margin-bottom:6px;
+      font-weight:700;
+    }
+
+    .distance{
+      font-size:13px;
+      color:var(--muted);
+      margin-bottom:6px;
+    }
+
+    .card button{
+      background:var(--blue2);
+      color:white;
+      border:0;
+      padding:8px 14px;
+      border-radius:8px;
+      cursor:pointer;
+      font-weight:600;
+      font-size:13px;
+    }
+    .card button:hover{background:var(--blue)}
+
+    /* Карта */
+    #map{
+      flex:1;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="brand">ENS · Карта</div>
+
+  <nav>
+    <a href="/map.html" style="color:var(--blue2)">Карта</a>
+    <a href="/profile.html">Профиль</a>
+    <button class="btn-logout" onclick="logout()">Выйти</button>
+  </nav>
+</header>
+
+<div class="layout">
+  <div class="sidebar">
+
+    <h2>Фильтры</h2>
+
+    <select id="typeFilter" onchange="loadAlerts()">
+      <option value="all">Все типы</option>
+      <option value="fire">Пожары</option>
+      <option value="accident">ДТП</option>
+      <option value="flood">Наводнения</option>
+      <option value="gas">Утечка газа</option>
+      <option value="other">Другое</option>
+    </select>
+
+    <div class="filter-buttons">
+      <button class="f-btn active" data-range="999" onclick="setRange(this)">Все</button>
+      <button class="f-btn" data-range="2" onclick="setRange(this)">Рядом (&lt; 2 км)</button>
+      <button class="f-btn" data-range="1" onclick="setRange(this)">Опасно (&lt; 1 км)</button>
+    </div>
+
+    <p style="font-size:13px;color:var(--muted)">
+      Карта обновляется автоматически. Нажми на карточку или кнопку «Показать», чтобы центрировать карту.
+    </p>
+
+    <div id="list"></div>
+  </div>
+
+  <div id="map"></div>
+</div>
+
+<script>
+  const API = window.location.origin;
+  let userPos = null;
+  let radiusFilter = 999;
+  let markers = [];
+
+  /* ============== JWT Проверка ============== */
+  const token = localStorage.getItem("token");
+  if (!token) location.href = "/auth.html";
+
+  /* ============== Карта ============== */
+  const map = L.map("map").setView([47.01, 28.86], 12);
+
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
+
+  navigator.geolocation.getCurrentPosition(pos => {
+    userPos = [pos.coords.latitude, pos.coords.longitude];
+    L.circle(userPos, {radius:300, color:"#2563eb55"}).addTo(map);
+  });
+
+  /* ---------- красивые маркеры с эмодзи ---------- */
+  const icons = {
+    FIRE:  L.divIcon({
+      className: 'alert-marker fire',
+      html: '🔥',
+      iconSize: [32, 32],
+      iconAnchor: [16, 32],
+      popupAnchor: [0, -28]
+    }),
+    FLOOD: L.divIcon({
+      className: 'alert-marker flood',
+      html: '💧',
+      iconSize: [32, 32],
+      iconAnchor: [16, 32],
+      popupAnchor: [0, -28]
+    }),
+    GAS:   L.divIcon({
+      className: 'alert-marker gas',
+      html: '☢️',
+      iconSize: [32, 32],
+      iconAnchor: [16, 32],
+      popupAnchor: [0, -28]
+    }),
+    OTHER: L.divIcon({
+      className: 'alert-marker other',
+      html: '⚠️',
+      iconSize: [32, 32],
+      iconAnchor: [16, 32],
+      popupAnchor: [0, -28]
+    })
+  };
+
+  function getIconByType(type) {
+    const t = (type || '').toUpperCase();
+    if (t.includes('FIRE'))     return icons.FIRE;
+    if (t.includes('FLOOD'))    return icons.FLOOD;
+    if (t.includes('GAS'))      return icons.GAS;
+    if (t.includes('ACCIDENT')) return icons.OTHER; // можно сделать отдельный
+    return icons.OTHER;
+  }
+
+  /* ============== Загрузка уведомлений ============== */
+  async function loadAlerts(){
+    const type = document.getElementById("typeFilter").value;
+
+    const res = await fetch(`${API}/api/notifications`, {
+      headers:{ "Authorization": "Bearer " + token }
+    });
+
+    const data = (await res.json())
+      .map(n => ({ ...n, type:n.type?.toLowerCase(), status:n.status?.toLowerCase() }))
+      .filter(n => n.status === "active");
+
+    const list = document.getElementById("list");
+    list.innerHTML = "";
+
+    // снимаем старые маркеры с карты
+    markers.forEach(m => map.removeLayer(m.marker));
+    markers = [];
+
+    data
+      .filter(a => type === "all" || a.type === type)
+      .filter(a => {
+        if (!userPos) return true;
+        const d = getDistance(userPos[0], userPos[1], a.latitude, a.longitude);
+        return d <= radiusFilter;
+      })
+      .forEach(alert => renderAlert(alert));
+  }
+
+  function renderAlert(alert){
+    const list = document.getElementById("list");
+
+    const dist = userPos
+      ? getDistance(userPos[0], userPos[1], alert.latitude, alert.longitude)
+      : null;
+
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = `
+      <div class="type-label">${(alert.type || '').toUpperCase()}</div>
+      <div>${alert.message || ''}</div>
+      <div class="distance">${dist ? "Расстояние: " + dist + " км" : ""}</div>
+      <button onclick="focusAlert(${alert.id})">Показать</button>
+    `;
+    card.onclick = () => focusAlert(alert.id);
+    list.appendChild(card);
+
+    // ВАЖНО: используем alert, а не n
+    const marker = L.marker([alert.latitude, alert.longitude], {
+      icon: getIconByType(alert.type)
+    }).addTo(map);
+
+    marker.bindPopup(`
+      <b>${(alert.type || '').toUpperCase()}</b><br>
+      ${alert.message || ''}<br>
+      ${Number(alert.latitude).toFixed(5)}, ${Number(alert.longitude).toFixed(5)}
+    `);
+
+    // сохраняем маркер вместе с id
+    markers.push({ id: alert.id, marker });
+  }
+
+  function focusAlert(id){
+    const m = markers.find(x => x.id === id);
+    if (m){
+      map.setView(m.marker.getLatLng(), 15);
+      m.marker.openPopup();
+    }
+  }
+
+  function setRange(btn){
+    document.querySelectorAll(".f-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    radiusFilter = parseFloat(btn.dataset.range);
+    loadAlerts();
+  }
+
+  function getDistance(lat1, lon1, lat2, lon2){
+    const R = 6371;
+    const dLat = (lat2-lat1)*Math.PI/180;
+    const dLon = (lon2-lon1)*Math.PI/180;
+    const a = Math.sin(dLat/2)**2 +
+      Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180) *
+      Math.sin(dLon/2)**2;
+    return (R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))).toFixed(2);
+  }
+
+  function logout(){
+    localStorage.clear();
+    location.href = "/auth.html";
+  }
+
+  setInterval(loadAlerts, 5000);
+  loadAlerts();
+</script>
+
+</body>
+</html>

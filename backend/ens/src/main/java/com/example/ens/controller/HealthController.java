@@ -8,6 +8,11 @@ public class HealthController {
 
     @GetMapping("/")
     public String health() {
+
+
+        
         return "ENS API is running 🚀";
     }
 }
+
+

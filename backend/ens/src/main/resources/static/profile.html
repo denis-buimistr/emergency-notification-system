@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>ENS · Профиль</title>
+
+  <style>
+    :root {
+      --blue:#1e40af; --blue2:#2563eb; --bg:#f8fafc; --card:#fff; 
+      --muted:#64748b; --border:#e2e8f0; --danger:#dc2626; --success:#16a34a;
+      --shadow:0 10px 30px rgba(15,23,42,.12);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; font-family:Inter,system-ui,Arial,sans-serif;
+      background:var(--bg); color:#0f172a;
+    }
+
+    /* topbar такая же как в map.html */
+    .topbar{
+      height:60px;
+      background:#fff;
+      border-bottom:1px solid var(--border);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:0 24px;
+    }
+    .brand{
+      font-size:22px;
+      font-weight:800;
+      color:var(--blue);
+    }
+    .nav-links{
+      display:flex;
+      gap:12px;
+      align-items:center;
+    }
+    .nav-btn{
+      border:none;
+      background:transparent;
+      padding:8px 12px;
+      border-radius:999px;
+      font-size:14px;
+      cursor:pointer;
+    }
+    .nav-btn.active{
+      background:#e0ecff;
+      color:var(--blue);
+      font-weight:600;
+    }
+    .nav-btn.logout{
+      background:#fee2e2;
+      color:var(--danger);
+    }
+
+    .shell{max-width:900px;margin:32px auto;padding:0 16px}
+    .card{
+      background:var(--card);border:1px solid var(--border);
+      border-radius:16px;padding:24px;
+      box-shadow:var(--shadow)
+    }
+    h1{margin:0 0 20px;color:var(--blue)}
+    .grid{display:grid;gap:16px}
+    @media(min-width:760px){.grid{grid-template-columns:1fr 1fr}}
+
+    label{font-size:14px;color:var(--muted);margin-bottom:4px;display:block}
+    input, select, textarea{
+      width:100%; padding:12px; border:1px solid var(--border);
+      border-radius:10px; background:#fff;
+    }
+
+    .avatar-box{
+      display:flex;align-items:center;gap:20px;margin-bottom:20px;
+    }
+    .avatar{
+      width:90px;height:90px;border-radius:50%;
+      background:#ddd;object-fit:cover;border:2px solid var(--border);
+    }
+
+    .btn{
+      padding:12px 18px;border-radius:10px;
+      border:0;cursor:pointer;font-weight:600;
+    }
+    .btn.save{background:var(--blue);color:white}
+    .btn.logout{background:var(--danger);color:white}
+    .btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+
+    .section-title{
+      font-weight:700;
+      margin-top:20px;
+      margin-bottom:8px;
+      color:#111827;
+    }
+    .hint{font-size:12px;color:var(--muted);margin-top:4px}
+    .switch-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:14px}
+    .switch-row input{width:auto}
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">ENS · Профиль</div>
+  <div class="nav-links">
+    <button class="nav-btn" onclick="location.href='/map.html'">Карта</button>
+    <button class="nav-btn active" onclick="location.href='/profile.html'">Профиль</button>
+    <button class="nav-btn logout" onclick="logout()">Выйти</button>
+  </div>
+</div>
+
+<div class="shell">
+  <h1>Личный профиль</h1>
+
+  <div class="card">
+
+    <div class="avatar-box">
+      <img id="avatarPreview" class="avatar" src="/static/default-avatar.png" />
+      <div>
+        <label>Фото профиля</label>
+        <input type="file" accept="image/*" id="avatarInput">
+        <div class="hint">Пока аватар хранится только локально (для демо).</div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div>
+        <label>Имя</label>
+        <input id="firstName">
+      </div>
+
+      <div>
+        <label>Фамилия</label>
+        <input id="lastName">
+      </div>
+
+      <div>
+        <label>Дата рождения</label>
+        <input id="birthDate" type="date">
+      </div>
+
+      <div>
+        <label>Группа крови</label>
+        <select id="bloodType">
+          <option value="">Не выбрано</option>
+          <option value="A+">A+</option>
+          <option value="A-">A-</option>
+          <option value="B+">B+</option>
+          <option value="B-">B-</option>
+          <option value="AB+">AB+</option>
+          <option value="AB-">AB-</option>
+          <option value="O+">O+</option>
+          <option value="O-">O-</option>
+        </select>
+      </div>
+
+      <div>
+        <label>Вес (кг)</label>
+        <input id="weight" type="number">
+      </div>
+
+      <div>
+        <label>Рост (см)</label>
+        <input id="height" type="number">
+      </div>
+    </div>
+
+    <div class="section-title">Медицина</div>
+    <label>Аллергии</label>
+    <textarea id="allergies" placeholder="Например: пыльца, орехи, пенициллин"></textarea>
+
+    <br>
+
+    <label>Хронические заболевания</label>
+    <textarea id="diseases" placeholder="Например: астма, диабет"></textarea>
+
+    <div class="section-title">Экстренная связь</div>
+    <label>Контакт экстренной связи (ICE)</label>
+    <input id="emergencyContact" placeholder="+373 600 00 000">
+
+    <div class="section-title">Уведомления</div>
+    <div class="switch-row">
+      <input type="checkbox" id="notifNewAlerts" checked>
+      <span>Уведомлять о новых алертах в моём городе</span>
+    </div>
+    <div class="switch-row">
+      <input type="checkbox" id="notifDangerZone" checked>
+      <span>Предупреждать, если я в опасной зоне (&lt; 1 км)</span>
+    </div>
+    <div class="switch-row">
+      <input type="checkbox" id="shareLocation" checked>
+      <span>Разрешить приложению использовать моё местоположение</span>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn save" onclick="saveProfile()">💾 Сохранить</button>
+      <button class="btn logout" onclick="logout()">Выйти</button>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  const API = window.location.origin;
+  const token = localStorage.getItem("token");
+  if (!token) window.location.href = "/auth.html";
+
+  // Загрузка профиля
+  async function loadProfile() {
+    try {
+      const res = await fetch(`${API}/api/user/me`, {
+        headers: { "Authorization": "Bearer " + token }
+      });
+      const u = await res.json();
+
+      document.getElementById('firstName').value = u.firstName || "";
+      document.getElementById('lastName').value = u.lastName || "";
+      document.getElementById('birthDate').value = u.birthDate || "";
+      document.getElementById('bloodType').value = u.bloodType || "";
+      document.getElementById('weight').value = u.weight || "";
+      document.getElementById('height').value = u.height || "";
+      document.getElementById('allergies').value = u.allergies || "";
+      document.getElementById('diseases').value = u.diseases || "";
+      document.getElementById('emergencyContact').value = u.emergencyContact || "";
+
+      if (u.avatarUrl) document.getElementById("avatarPreview").src = u.avatarUrl;
+    } catch (e) {
+      console.error("Ошибка загрузки профиля", e);
+    }
+  }
+
+  async function uploadAvatar() {
+    const file = avatarInput.files[0];
+    if (!file) return;
+
+    const data = new FormData();
+    data.append("file", file);
+
+    const res = await fetch(`${API}/api/user/avatar`, {
+        method: "POST",
+        headers: { "Authorization": "Bearer " + token },
+        body: data
+    });
+
+    if (res.ok) {
+        const url = await res.text();
+        avatarPreview.src = url;
+    } else {
+        alert("Ошибка загрузки фото");
+    }
+}
+
+
+  // Сохранение профиля
+  async function saveProfile() {
+    const body = {
+      firstName: firstName.value,
+      lastName: lastName.value,
+      birthDate: birthDate.value,
+      bloodType: bloodType.value,
+      weight: weight.value,
+      height: height.value,
+      allergies: allergies.value,
+      diseases: diseases.value,
+      emergencyContact: emergencyContact.value,
+      notifNewAlerts: notifNewAlerts.checked,
+      notifDangerZone: notifDangerZone.checked,
+      shareLocation: shareLocation.checked
+      
+    };
+
+    const res = await fetch(`${API}/api/user/update`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + token
+      },
+      body: JSON.stringify(body)
+    });
+
+    if (res.ok) {
+       await uploadAvatar();
+       
+       alert("✅ Профиль обновлён!");
+    }
+   
+    else alert("❌ Ошибка сохранения");
+  }
+
+  function logout() {
+    localStorage.clear();
+    location.href = "/auth.html";
+  }
+
+  loadProfile();
+</script>
+
+</body>
+</html>
