@@ -1,4 +1,4 @@
-[README.md](https://github.com/user-attachments/files/35039942/README.md)
+
 # Emergency Notification System (ENS)
 
 A client-server application for sending emergency alerts. An administrator creates an alert with a type, a message and a location on the map, and every registered user gets it by email. The alert shows up on a live map until it is marked as resolved.
